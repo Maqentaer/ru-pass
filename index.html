@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<link rel="icon" href="favicon.ico">
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="stylesheet" href="stylesheets/app-styles.css">
+	<title>Ru-Pass</title>
+	<meta name="description" content="Web application for converting passwords from Russian to English">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<script type="text/javascript">
+
+	   /**
+		*
+		* Web application for converting passwords from Russian to English
+		*
+		* @author     Maqentaer
+		* @license    http://www.apache.org/licenses/LICENSE-2.0
+		* @version    1.0.0
+		*
+		*/
+
+		var ruLetterMap = {
+			'ё': '`',
+			'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p', 'х': '[', 'ъ': ']',
+			'ф': 'a', 'ы': 's', 'в': 'd', 'а': 'f', 'п': 'g', 'р': 'h', 'о': 'j', 'л': 'k', 'д': 'l', 'ж': ';', 'э': "'",
+			'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n', 'ь': 'm', 'б': ',', 'ю': '.', '.': '/',
+			'Ё': '~',
+			'Й': 'Q', 'Ц': 'W', 'У': 'E', 'К': 'R', 'Е': 'T', 'Н': 'Y', 'Г': 'U', 'Ш': 'I', 'Щ': 'O', 'З': 'P', 'Х': '{', 'Ъ': '}',
+			'Ф': 'A', 'Ы': 'S', 'В': 'D', 'А': 'F', 'П': 'G', 'Р': 'H', 'О': 'J', 'Л': 'K', 'Д': 'L', 'Ж': ':', 'Э': '"',
+			'Я': 'Z', 'Ч': 'X', 'С': 'C', 'М': 'V', 'И': 'B', 'Т': 'N', 'Ь': 'M', 'Б': '<', 'Ю': '>'
+		};
+
+		var enLetterMap = Object.fromEntries(Object.entries(ruLetterMap).map(function(data) { return [data[1], data[0]]; }));
+
+		var enNumberMap = {
+			'1': '!', '2': '"', '3': '№', '4': ';', '5': '%', '6': ':', '7': '?', '8': '*', '9': '(', '0': ')'
+		};
+
+		var ruNumberMap = {
+			'1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')'
+		};
+
+		function convertLayout(text, options) {
+			var convertRuEn = options && options.convertRuEn;
+			var convertNumbers = options && options.convertNumbers;
+			return text.split('').map(char => {
+				if (!convertRuEn) {
+					if (ruLetterMap[char]) {
+						return ruLetterMap[char];
+					}
+					if (convertNumbers && ruNumberMap[char]) {
+						return ruNumberMap[char];
+					}
+				} else {
+					if (enLetterMap[char]) {
+						return enLetterMap[char];
+					}
+					if (convertNumbers && enNumberMap[char]) {
+						return enNumberMap[char];
+					}
+				}
+				return char;
+			}).join('');
+		}
+		
+		document.addEventListener("DOMContentLoaded", function() {
+			var input = document.getElementById('input');
+			var output = document.getElementById('output');
+			var ruen = document.getElementById('ruen');
+			var shiftOnNumbers = document.getElementById('shiftOnNumbers');
+			var numberInput = document.getElementById('numberInput');
+			var hideText = document.getElementById('hideText');
+
+			function getOpts() {
+				return {
+					convertRuEn: ruen.checked,
+					convertNumbers: shiftOnNumbers.checked,
+				};
+			}
+
+			var historyStack = [''];
+			var redoStack = [];
+			input.addEventListener('beforeinput', function(e) {
+				if (e.inputType === 'historyUndo') {
+					if (historyStack.length > 1) {
+						var current = historyStack.pop();
+						redoStack.push(current);
+						output.value = historyStack[historyStack.length - 1];
+					}
+					return;
+				} else if (e.inputType === 'historyRedo') {
+					if (redoStack.length > 0) {
+						var value = redoStack.pop();
+						historyStack.push(value);
+						output.value = value;
+					}
+					return;
+				}
+				var start = this.selectionStart;
+				var end = this.selectionEnd;
+				if (start === end) {
+					if (e.inputType === 'deleteContentBackward') start--;
+					else if (e.inputType === 'deleteContentForward') end++;
+				}
+				var before = output.value.substring(0, start);
+				var after = output.value.substring(end);
+				output.value = before + convertLayout(e.data || '', getOpts()) + after;
+				historyStack.push(output.value);
+				redoStack.length = 0;
+			});
+
+			document.getElementById('runButton').addEventListener('click', function() {
+				output.value = convertLayout(input.value, getOpts());
+			});
+
+			document.getElementById('copyButton').addEventListener('click', function() {
+				navigator.clipboard.writeText(output.value);
+			});
+
+			function updateType() {
+				output.style = input.style = hideText.checked ? '-webkit-text-security: disc;' : '';
+				output.type = hideText.checked ? 'password' : 'text';
+				input.type = numberInput.checked ? 'number' : output.type;
+			}
+
+			numberInput.addEventListener('click', updateType);
+			hideText.addEventListener('click', updateType);
+		});
+	</script>
+</head>
+<body>
+    <div class="header">
+        <h1>Ru-Pass</h1>
+        <p>Конвертируйте текст</p>
+    </div>
+	
+	<div class="input-group">
+		<label for="input">Введите текст:</label>
+		<div style="display: flex;">
+			<input type="text" class="input-field" id="input" placeholder="Например: Привет! №123" value="" autocomplete="off"/>
+			<button class="button right-button" id="runButton">&gt;</button>
+		</div>
+	</div>
+
+	<div class="input-group">
+		<label for="output">Результат:</label>
+		<input type="text" class="input-field" id="output" readonly/>
+	</div>
+	
+	<div class="button-container">
+		<button class="button max-width" id="copyButton">Скопировать</button>
+	</div>
+	
+	<div class="settings">
+		<h2>Параметры</h2>
+
+		<div class="setting-item">
+			<span class="setting-label">RU / EN</span>
+			<label class="toggle">
+				<input type="checkbox" id="ruen">
+				<span class="slider"></span>
+			</label>
+		</div>
+
+		<div class="setting-item">
+			<span class="setting-label">Shift на цифрах</span>
+			<label class="toggle">
+				<input type="checkbox" id="shiftOnNumbers">
+				<span class="slider"></span>
+			</label>
+		</div>
+
+		<div class="setting-item">
+			<span class="setting-label">Клавиши телефона</span>
+			<label class="toggle">
+				<input type="checkbox" id="numberInput">
+				<span class="slider"></span>
+			</label>
+		</div>
+
+		<div class="setting-item">
+			<span class="setting-label">Скрыть пароль</span>
+			<label class="toggle">
+				<input type="checkbox" id="hideText">
+				<span class="slider"></span>
+			</label>
+		</div>
+	</div>
+	
+    <div class="footer">
+        <p>Ru-Pass</p>
+    </div>
+</body>
+</html>
