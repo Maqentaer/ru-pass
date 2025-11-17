@@ -126,6 +126,7 @@
 				output.style = input.style = hideText.checked ? '-webkit-text-security: disc;' : '';
 				output.type = hideText.checked ? 'password' : 'text';
 				input.type = numberInput.checked ? 'number' : output.type;
+				input.inputmode = numberInput.checked ? 'tel' : '';
 			}
 
 			numberInput.addEventListener('click', updateType);
