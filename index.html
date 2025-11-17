@@ -131,6 +131,10 @@
 
 			numberInput.addEventListener('click', updateType);
 			hideText.addEventListener('click', updateType);
+			
+			ruen.addEventListener('click', function() {
+				document.documentElement.lang = this.checked ? 'en' : 'ru';
+			});
 		});
 	</script>
 </head>
