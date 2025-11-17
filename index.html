@@ -124,9 +124,9 @@
 
 			function updateType() {
 				output.style = input.style = hideText.checked ? '-webkit-text-security: disc;' : '';
-				output.type = hideText.checked ? 'password' : 'text';
-				input.type = numberInput.checked ? 'number' : output.type;
+				output.type = input.type = hideText.checked ? 'password' : 'text';
 				input.inputmode = numberInput.checked ? 'tel' : '';
+				input.setAttribute('inputmode', input.inputmode);
 			}
 
 			numberInput.addEventListener('click', updateType);
